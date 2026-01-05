@@ -1,0 +1,1176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FFXIV Crafting Reagent Price Comparison - Aether</title>
+    <style>
+        :root {
+            --bg-primary: #1a1a2e;
+            --bg-secondary: #16213e;
+            --bg-tertiary: #0f3460;
+            --text-primary: #e4e4e4;
+            --text-secondary: #a4a4a4;
+            --accent: #e94560;
+            --accent-hover: #ff6b6b;
+            --success: #4ecca3;
+            --warning: #ffc107;
+            --border: #2a2a4a;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: var(--bg-secondary);
+            border-radius: 10px;
+            border: 1px solid var(--border);
+        }
+
+        h1 {
+            color: var(--accent);
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            color: var(--text-secondary);
+        }
+
+        .section {
+            background: var(--bg-secondary);
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+            border: 1px solid var(--border);
+        }
+
+        .section-title {
+            color: var(--accent);
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .step-number {
+            background: var(--accent);
+            color: white;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+        }
+
+        /* Input Section */
+        .input-container {
+            position: relative;
+            margin-bottom: 15px;
+        }
+
+        .item-input {
+            width: 100%;
+            padding: 15px;
+            font-size: 16px;
+            background: var(--bg-tertiary);
+            border: 2px solid var(--border);
+            border-radius: 8px;
+            color: var(--text-primary);
+            transition: border-color 0.3s;
+        }
+
+        .item-input:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+
+        .autocomplete-dropdown {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            border-radius: 0 0 8px 8px;
+            max-height: 300px;
+            overflow-y: auto;
+            z-index: 1000;
+            display: none;
+        }
+
+        .autocomplete-item {
+            padding: 12px 15px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .autocomplete-item:hover {
+            background: var(--bg-secondary);
+        }
+
+        .autocomplete-item img {
+            width: 32px;
+            height: 32px;
+        }
+
+        .item-name {
+            flex: 1;
+        }
+
+        .item-category {
+            color: var(--text-secondary);
+            font-size: 12px;
+        }
+
+        /* Item List */
+        .item-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 15px;
+            min-height: 50px;
+            padding: 10px;
+            background: var(--bg-primary);
+            border-radius: 8px;
+        }
+
+        .item-tag {
+            background: var(--bg-tertiary);
+            padding: 8px 15px;
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            border: 1px solid var(--border);
+        }
+
+        .item-tag img {
+            width: 24px;
+            height: 24px;
+        }
+
+        .item-tag .remove {
+            cursor: pointer;
+            color: var(--accent);
+            font-weight: bold;
+            margin-left: 5px;
+        }
+
+        .item-tag .remove:hover {
+            color: var(--accent-hover);
+        }
+
+        .quantity-input {
+            width: 50px;
+            padding: 4px 8px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            color: var(--text-primary);
+            text-align: center;
+        }
+
+        /* Buttons */
+        .btn {
+            padding: 12px 24px;
+            font-size: 16px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: bold;
+        }
+
+        .btn-primary {
+            background: var(--accent);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: var(--accent-hover);
+        }
+
+        .btn-secondary {
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+            border: 1px solid var(--border);
+        }
+
+        .btn-secondary:hover {
+            background: var(--border);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        /* Reagents Table */
+        .reagent-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+
+        .reagent-table th,
+        .reagent-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .reagent-table th {
+            background: var(--bg-tertiary);
+            color: var(--accent);
+        }
+
+        .reagent-table tr:hover {
+            background: var(--bg-primary);
+        }
+
+        .reagent-table img {
+            width: 24px;
+            height: 24px;
+            vertical-align: middle;
+            margin-right: 8px;
+        }
+
+        /* Server Results */
+        .server-section {
+            margin-top: 20px;
+            padding: 15px;
+            background: var(--bg-primary);
+            border-radius: 8px;
+            border-left: 4px solid var(--accent);
+        }
+
+        .server-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .server-name {
+            font-size: 20px;
+            font-weight: bold;
+            color: var(--success);
+        }
+
+        .server-total {
+            font-size: 18px;
+            color: var(--warning);
+        }
+
+        .price-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .price-table th,
+        .price-table td {
+            padding: 10px;
+            text-align: left;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .price-table th {
+            background: var(--bg-tertiary);
+            color: var(--text-secondary);
+            font-size: 12px;
+            text-transform: uppercase;
+        }
+
+        .price-hq {
+            color: var(--success);
+        }
+
+        .price-nq {
+            color: var(--text-secondary);
+        }
+
+        .extra-items {
+            color: var(--warning);
+            font-size: 12px;
+        }
+
+        /* Loading */
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 40px;
+        }
+
+        .loading.active {
+            display: block;
+        }
+
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid var(--border);
+            border-top-color: var(--accent);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Grand Total */
+        .grand-total {
+            background: var(--bg-tertiary);
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        .grand-total-label {
+            font-size: 14px;
+            color: var(--text-secondary);
+            margin-bottom: 5px;
+        }
+
+        .grand-total-value {
+            font-size: 32px;
+            font-weight: bold;
+            color: var(--success);
+        }
+
+        /* Status Messages */
+        .status {
+            padding: 10px 15px;
+            border-radius: 8px;
+            margin: 10px 0;
+        }
+
+        .status-info {
+            background: var(--bg-tertiary);
+            border-left: 4px solid var(--accent);
+        }
+
+        .status-error {
+            background: rgba(233, 69, 96, 0.2);
+            border-left: 4px solid var(--accent);
+        }
+
+        .status-success {
+            background: rgba(78, 204, 163, 0.2);
+            border-left: 4px solid var(--success);
+        }
+
+        /* Tabs */
+        .tabs {
+            display: flex;
+            gap: 5px;
+            margin-bottom: 15px;
+        }
+
+        .tab {
+            padding: 10px 20px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            border-radius: 8px 8px 0 0;
+            cursor: pointer;
+            color: var(--text-secondary);
+        }
+
+        .tab.active {
+            background: var(--bg-secondary);
+            color: var(--accent);
+            border-bottom-color: var(--bg-secondary);
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .server-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 10px;
+            }
+
+            .price-table {
+                font-size: 14px;
+            }
+        }
+
+        /* HQ Icon */
+        .hq-icon {
+            color: var(--success);
+            font-weight: bold;
+            font-size: 10px;
+            vertical-align: super;
+        }
+
+        /* Recipe Tree */
+        .recipe-tree {
+            margin-left: 20px;
+            border-left: 2px solid var(--border);
+            padding-left: 15px;
+        }
+
+        .recipe-item {
+            padding: 5px 0;
+        }
+
+        .recipe-expand {
+            cursor: pointer;
+            color: var(--accent);
+        }
+
+        /* Summary Cards */
+        .summary-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .summary-card {
+            background: var(--bg-tertiary);
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .summary-card-label {
+            color: var(--text-secondary);
+            font-size: 12px;
+            margin-bottom: 5px;
+        }
+
+        .summary-card-value {
+            font-size: 24px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>FFXIV Reagent Price Comparison</h1>
+            <p class="subtitle">Find the cheapest prices across Aether Data Center servers</p>
+        </header>
+
+        <!-- Step 1: Item Input -->
+        <div class="section">
+            <h2 class="section-title">
+                <span class="step-number">1</span>
+                Add Items to Craft
+            </h2>
+            <div class="input-container">
+                <input type="text" class="item-input" id="itemSearch"
+                       placeholder="Type to search for items (e.g., 'Tsai tou Vounou', 'Grade 8 Tincture')..."
+                       autocomplete="off">
+                <div class="autocomplete-dropdown" id="autocompleteDropdown"></div>
+            </div>
+            <div class="item-list" id="selectedItems">
+                <span class="placeholder" style="color: var(--text-secondary); padding: 10px;">
+                    Selected items will appear here. Search and click to add.
+                </span>
+            </div>
+            <div class="button-group">
+                <button class="btn btn-primary" id="findReagents" disabled>
+                    Find Required Reagents
+                </button>
+                <button class="btn btn-secondary" id="clearItems">
+                    Clear All
+                </button>
+            </div>
+        </div>
+
+        <!-- Step 2: Reagent List -->
+        <div class="section" id="reagentSection" style="display: none;">
+            <h2 class="section-title">
+                <span class="step-number">2</span>
+                Required Reagents
+            </h2>
+            <div class="status status-info" id="reagentStatus"></div>
+            <div id="reagentList"></div>
+            <div class="button-group" style="margin-top: 15px;">
+                <button class="btn btn-primary" id="findPrices" disabled>
+                    Find Best Prices
+                </button>
+            </div>
+        </div>
+
+        <!-- Step 3: Price Comparison -->
+        <div class="section" id="priceSection" style="display: none;">
+            <h2 class="section-title">
+                <span class="step-number">3</span>
+                Best Prices by Server
+            </h2>
+            <div class="loading" id="priceLoading">
+                <div class="spinner"></div>
+                <p>Fetching prices from Universalis...</p>
+            </div>
+            <div id="priceResults"></div>
+        </div>
+    </div>
+
+    <script>
+        // Aether Data Center Servers
+        const AETHER_SERVERS = [
+            'Adamantoise', 'Cactuar', 'Faerie', 'Gilgamesh',
+            'Jenova', 'Midgardsormr', 'Sargatanas', 'Siren'
+        ];
+
+        // State
+        let selectedItems = [];
+        let requiredReagents = [];
+        let searchTimeout = null;
+
+        // DOM Elements
+        const itemSearch = document.getElementById('itemSearch');
+        const autocompleteDropdown = document.getElementById('autocompleteDropdown');
+        const selectedItemsContainer = document.getElementById('selectedItems');
+        const findReagentsBtn = document.getElementById('findReagents');
+        const clearItemsBtn = document.getElementById('clearItems');
+        const reagentSection = document.getElementById('reagentSection');
+        const reagentList = document.getElementById('reagentList');
+        const reagentStatus = document.getElementById('reagentStatus');
+        const findPricesBtn = document.getElementById('findPrices');
+        const priceSection = document.getElementById('priceSection');
+        const priceLoading = document.getElementById('priceLoading');
+        const priceResults = document.getElementById('priceResults');
+
+        // XIVAPI base URL
+        const XIVAPI_BASE = 'https://xivapi.com';
+        const XIVAPI_V2_BASE = 'https://v2.xivapi.com/api';
+        const UNIVERSALIS_BASE = 'https://universalis.app/api/v2';
+
+        // Search for items
+        async function searchItems(query) {
+            if (query.length < 2) {
+                autocompleteDropdown.style.display = 'none';
+                return;
+            }
+
+            try {
+                // Using XIVAPI search endpoint
+                const response = await fetch(
+                    `${XIVAPI_BASE}/search?string=${encodeURIComponent(query)}&indexes=Item&limit=15&filters=IsUntradable=0`
+                );
+                const data = await response.json();
+
+                if (data.Results && data.Results.length > 0) {
+                    displayAutocomplete(data.Results);
+                } else {
+                    autocompleteDropdown.innerHTML = '<div class="autocomplete-item">No items found</div>';
+                    autocompleteDropdown.style.display = 'block';
+                }
+            } catch (error) {
+                console.error('Search error:', error);
+                autocompleteDropdown.innerHTML = '<div class="autocomplete-item">Error searching items</div>';
+                autocompleteDropdown.style.display = 'block';
+            }
+        }
+
+        // Display autocomplete results
+        function displayAutocomplete(results) {
+            autocompleteDropdown.innerHTML = results.map(item => `
+                <div class="autocomplete-item" data-id="${item.ID}" data-name="${item.Name}" data-icon="${item.Icon}">
+                    <img src="${XIVAPI_BASE}${item.Icon}" alt="" onerror="this.style.display='none'">
+                    <span class="item-name">${item.Name}</span>
+                    <span class="item-category">${item.UrlType || 'Item'}</span>
+                </div>
+            `).join('');
+            autocompleteDropdown.style.display = 'block';
+        }
+
+        // Add item to selected list
+        function addItem(id, name, icon) {
+            if (selectedItems.find(item => item.id === id)) {
+                return; // Already added
+            }
+
+            selectedItems.push({ id, name, icon, quantity: 1 });
+            renderSelectedItems();
+            autocompleteDropdown.style.display = 'none';
+            itemSearch.value = '';
+            findReagentsBtn.disabled = false;
+        }
+
+        // Remove item from list
+        function removeItem(id) {
+            selectedItems = selectedItems.filter(item => item.id !== id);
+            renderSelectedItems();
+            if (selectedItems.length === 0) {
+                findReagentsBtn.disabled = true;
+            }
+        }
+
+        // Update item quantity
+        function updateQuantity(id, quantity) {
+            const item = selectedItems.find(item => item.id === id);
+            if (item) {
+                item.quantity = Math.max(1, parseInt(quantity) || 1);
+            }
+        }
+
+        // Render selected items
+        function renderSelectedItems() {
+            if (selectedItems.length === 0) {
+                selectedItemsContainer.innerHTML = `
+                    <span class="placeholder" style="color: var(--text-secondary); padding: 10px;">
+                        Selected items will appear here. Search and click to add.
+                    </span>
+                `;
+                return;
+            }
+
+            selectedItemsContainer.innerHTML = selectedItems.map(item => `
+                <div class="item-tag">
+                    <img src="${XIVAPI_BASE}${item.icon}" alt="" onerror="this.style.display='none'">
+                    <span>${item.name}</span>
+                    <input type="number" class="quantity-input" value="${item.quantity}" min="1"
+                           onchange="updateQuantity(${item.id}, this.value)">
+                    <span class="remove" onclick="removeItem(${item.id})">&times;</span>
+                </div>
+            `).join('');
+        }
+
+        // Get recipe for an item
+        async function getRecipe(itemId) {
+            try {
+                // Search for recipes that create this item
+                const response = await fetch(
+                    `${XIVAPI_BASE}/search?indexes=Recipe&filters=ItemResult.ID=${itemId}`
+                );
+                const data = await response.json();
+
+                if (data.Results && data.Results.length > 0) {
+                    // Get the full recipe details
+                    const recipeResponse = await fetch(
+                        `${XIVAPI_BASE}/recipe/${data.Results[0].ID}`
+                    );
+                    return await recipeResponse.json();
+                }
+                return null;
+            } catch (error) {
+                console.error('Recipe fetch error:', error);
+                return null;
+            }
+        }
+
+        // Extract ingredients from recipe
+        function extractIngredients(recipe, multiplier = 1) {
+            const ingredients = [];
+
+            for (let i = 0; i <= 9; i++) {
+                const ingredient = recipe[`ItemIngredient${i}`];
+                const amount = recipe[`AmountIngredient${i}`];
+
+                if (ingredient && ingredient.ID && amount > 0) {
+                    ingredients.push({
+                        id: ingredient.ID,
+                        name: ingredient.Name,
+                        icon: ingredient.Icon,
+                        quantity: amount * multiplier,
+                        canHQ: ingredient.CanBeHq === 1
+                    });
+                }
+            }
+
+            return ingredients;
+        }
+
+        // Find all required reagents
+        async function findAllReagents() {
+            reagentSection.style.display = 'block';
+            reagentStatus.textContent = 'Fetching recipes...';
+            reagentStatus.className = 'status status-info';
+            reagentList.innerHTML = '<div class="loading active"><div class="spinner"></div></div>';
+            findPricesBtn.disabled = true;
+
+            const allReagents = new Map(); // id -> { ...item, totalQuantity }
+
+            for (const item of selectedItems) {
+                reagentStatus.textContent = `Fetching recipe for ${item.name}...`;
+
+                const recipe = await getRecipe(item.id);
+
+                if (recipe) {
+                    const ingredients = extractIngredients(recipe, item.quantity);
+
+                    for (const ingredient of ingredients) {
+                        if (allReagents.has(ingredient.id)) {
+                            allReagents.get(ingredient.id).totalQuantity += ingredient.quantity;
+                        } else {
+                            allReagents.set(ingredient.id, {
+                                ...ingredient,
+                                totalQuantity: ingredient.quantity
+                            });
+                        }
+                    }
+                } else {
+                    // Item might not be craftable, add it as a reagent itself
+                    if (allReagents.has(item.id)) {
+                        allReagents.get(item.id).totalQuantity += item.quantity;
+                    } else {
+                        allReagents.set(item.id, {
+                            id: item.id,
+                            name: item.name,
+                            icon: item.icon,
+                            totalQuantity: item.quantity,
+                            canHQ: true
+                        });
+                    }
+                }
+            }
+
+            requiredReagents = Array.from(allReagents.values());
+
+            if (requiredReagents.length === 0) {
+                reagentStatus.textContent = 'No reagents found. Items may not be craftable.';
+                reagentStatus.className = 'status status-error';
+                reagentList.innerHTML = '';
+                return;
+            }
+
+            reagentStatus.textContent = `Found ${requiredReagents.length} required reagents`;
+            reagentStatus.className = 'status status-success';
+
+            reagentList.innerHTML = `
+                <table class="reagent-table">
+                    <thead>
+                        <tr>
+                            <th>Item</th>
+                            <th>Required Quantity</th>
+                            <th>HQ Available</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${requiredReagents.map(r => `
+                            <tr>
+                                <td>
+                                    <img src="${XIVAPI_BASE}${r.icon}" alt="" onerror="this.style.display='none'">
+                                    ${r.name}
+                                </td>
+                                <td>${r.totalQuantity}</td>
+                                <td>${r.canHQ ? '<span class="hq-icon">HQ</span> Yes' : 'No'}</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            `;
+
+            findPricesBtn.disabled = false;
+        }
+
+        // Get prices from Universalis
+        async function getUniversalisPrices(itemIds) {
+            const idsParam = itemIds.join(',');
+            const response = await fetch(
+                `${UNIVERSALIS_BASE}/Aether/${idsParam}?listings=30&hq=true`
+            );
+            return await response.json();
+        }
+
+        // Calculate best price for quantity needed
+        function calculateBestPrice(listings, quantityNeeded, preferHQ = true) {
+            if (!listings || listings.length === 0) {
+                return null;
+            }
+
+            // Separate HQ and NQ listings
+            const hqListings = listings.filter(l => l.hq).sort((a, b) => a.pricePerUnit - b.pricePerUnit);
+            const nqListings = listings.filter(l => !l.hq).sort((a, b) => a.pricePerUnit - b.pricePerUnit);
+
+            // Try HQ first if preferred and available
+            let selectedListings = [];
+            let remaining = quantityNeeded;
+            let totalCost = 0;
+            let totalItems = 0;
+
+            const listingsToUse = preferHQ && hqListings.length > 0 ? hqListings : nqListings.length > 0 ? nqListings : hqListings;
+
+            for (const listing of listingsToUse) {
+                if (remaining <= 0) break;
+
+                const takeQuantity = Math.min(listing.quantity, remaining);
+                selectedListings.push({
+                    ...listing,
+                    usedQuantity: takeQuantity
+                });
+                totalCost += listing.pricePerUnit * takeQuantity;
+                totalItems += takeQuantity;
+                remaining -= takeQuantity;
+            }
+
+            // If we couldn't get enough from preferred, try the other
+            if (remaining > 0) {
+                const fallbackListings = preferHQ ? nqListings : hqListings;
+                for (const listing of fallbackListings) {
+                    if (remaining <= 0) break;
+
+                    const takeQuantity = Math.min(listing.quantity, remaining);
+                    selectedListings.push({
+                        ...listing,
+                        usedQuantity: takeQuantity
+                    });
+                    totalCost += listing.pricePerUnit * takeQuantity;
+                    totalItems += takeQuantity;
+                    remaining -= takeQuantity;
+                }
+            }
+
+            // If we still don't have enough, buy full stacks
+            if (remaining > 0 && listingsToUse.length > 0) {
+                for (const listing of listingsToUse) {
+                    selectedListings.push({
+                        ...listing,
+                        usedQuantity: listing.quantity
+                    });
+                    totalCost += listing.pricePerUnit * listing.quantity;
+                    totalItems += listing.quantity;
+                    remaining -= listing.quantity;
+                    if (remaining <= 0) break;
+                }
+            }
+
+            return {
+                listings: selectedListings,
+                totalCost,
+                totalItems,
+                extraItems: Math.max(0, totalItems - quantityNeeded),
+                fulfilled: totalItems >= quantityNeeded,
+                isHQ: selectedListings.some(l => l.hq)
+            };
+        }
+
+        // Find best prices across servers
+        async function findBestPrices() {
+            priceSection.style.display = 'block';
+            priceLoading.classList.add('active');
+            priceResults.innerHTML = '';
+
+            try {
+                const itemIds = requiredReagents.map(r => r.id);
+
+                // Batch items (Universalis has limits on items per request)
+                const batchSize = 100;
+                const batches = [];
+                for (let i = 0; i < itemIds.length; i += batchSize) {
+                    batches.push(itemIds.slice(i, i + batchSize));
+                }
+
+                // Fetch all batches
+                const allData = {};
+                for (const batch of batches) {
+                    const data = await getUniversalisPrices(batch);
+
+                    if (data.items) {
+                        // Multi-item response
+                        Object.assign(allData, data.items);
+                    } else if (data.itemID) {
+                        // Single item response
+                        allData[data.itemID] = data;
+                    }
+                }
+
+                // Process results - find best server for each item
+                const serverShoppingLists = {};
+                AETHER_SERVERS.forEach(server => {
+                    serverShoppingLists[server] = {
+                        items: [],
+                        total: 0
+                    };
+                });
+
+                const itemResults = [];
+
+                for (const reagent of requiredReagents) {
+                    const itemData = allData[reagent.id];
+
+                    if (!itemData || !itemData.listings || itemData.listings.length === 0) {
+                        itemResults.push({
+                            ...reagent,
+                            bestServer: null,
+                            bestPrice: null,
+                            error: 'No listings found'
+                        });
+                        continue;
+                    }
+
+                    // Group listings by server
+                    const serverListings = {};
+                    for (const listing of itemData.listings) {
+                        const server = listing.worldName;
+                        if (!serverListings[server]) {
+                            serverListings[server] = [];
+                        }
+                        serverListings[server].push(listing);
+                    }
+
+                    // Find best server
+                    let bestServer = null;
+                    let bestPriceInfo = null;
+                    let lowestCost = Infinity;
+
+                    for (const [server, listings] of Object.entries(serverListings)) {
+                        const priceInfo = calculateBestPrice(listings, reagent.totalQuantity, reagent.canHQ);
+
+                        if (priceInfo && priceInfo.fulfilled && priceInfo.totalCost < lowestCost) {
+                            lowestCost = priceInfo.totalCost;
+                            bestServer = server;
+                            bestPriceInfo = priceInfo;
+                        }
+                    }
+
+                    // If no server can fulfill, find cheapest partial
+                    if (!bestServer) {
+                        for (const [server, listings] of Object.entries(serverListings)) {
+                            const priceInfo = calculateBestPrice(listings, reagent.totalQuantity, reagent.canHQ);
+
+                            if (priceInfo && priceInfo.totalCost < lowestCost) {
+                                lowestCost = priceInfo.totalCost;
+                                bestServer = server;
+                                bestPriceInfo = priceInfo;
+                            }
+                        }
+                    }
+
+                    if (bestServer && bestPriceInfo) {
+                        serverShoppingLists[bestServer].items.push({
+                            ...reagent,
+                            priceInfo: bestPriceInfo
+                        });
+                        serverShoppingLists[bestServer].total += bestPriceInfo.totalCost;
+                    }
+
+                    itemResults.push({
+                        ...reagent,
+                        bestServer,
+                        bestPrice: bestPriceInfo
+                    });
+                }
+
+                // Render results
+                displayPriceResults(serverShoppingLists, itemResults);
+
+            } catch (error) {
+                console.error('Price fetch error:', error);
+                priceResults.innerHTML = `
+                    <div class="status status-error">
+                        Error fetching prices: ${error.message}
+                    </div>
+                `;
+            } finally {
+                priceLoading.classList.remove('active');
+            }
+        }
+
+        // Display price results
+        function displayPriceResults(serverShoppingLists, itemResults) {
+            let html = '';
+            let grandTotal = 0;
+            let totalExtraItems = 0;
+
+            // Summary cards
+            const serversUsed = Object.entries(serverShoppingLists)
+                .filter(([_, data]) => data.items.length > 0).length;
+            const totalItems = itemResults.length;
+            const itemsFound = itemResults.filter(i => i.bestServer).length;
+
+            html += `
+                <div class="summary-cards">
+                    <div class="summary-card">
+                        <div class="summary-card-label">Servers to Visit</div>
+                        <div class="summary-card-value" style="color: var(--accent);">${serversUsed}</div>
+                    </div>
+                    <div class="summary-card">
+                        <div class="summary-card-label">Items Found</div>
+                        <div class="summary-card-value" style="color: var(--success);">${itemsFound}/${totalItems}</div>
+                    </div>
+                </div>
+            `;
+
+            // Sort servers by total cost (ascending) and filter out empty
+            const sortedServers = Object.entries(serverShoppingLists)
+                .filter(([_, data]) => data.items.length > 0)
+                .sort((a, b) => b.items.length - a.items.length);
+
+            for (const [server, data] of sortedServers) {
+                grandTotal += data.total;
+
+                html += `
+                    <div class="server-section">
+                        <div class="server-header">
+                            <span class="server-name">${server}</span>
+                            <span class="server-total">${formatGil(data.total)}</span>
+                        </div>
+                        <table class="price-table">
+                            <thead>
+                                <tr>
+                                    <th>Item</th>
+                                    <th>Needed</th>
+                                    <th>Buying</th>
+                                    <th>Extra</th>
+                                    <th>Unit Price</th>
+                                    <th>Total</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                `;
+
+                for (const item of data.items) {
+                    const avgPrice = Math.round(item.priceInfo.totalCost / item.priceInfo.totalItems);
+                    totalExtraItems += item.priceInfo.extraItems;
+
+                    html += `
+                        <tr>
+                            <td>
+                                <img src="${XIVAPI_BASE}${item.icon}" alt="" style="width:20px;height:20px;vertical-align:middle;margin-right:5px;" onerror="this.style.display='none'">
+                                ${item.name}
+                                ${item.priceInfo.isHQ ? '<span class="hq-icon">HQ</span>' : ''}
+                            </td>
+                            <td>${item.totalQuantity}</td>
+                            <td>${item.priceInfo.totalItems}</td>
+                            <td class="extra-items">${item.priceInfo.extraItems > 0 ? '+' + item.priceInfo.extraItems : '-'}</td>
+                            <td>${formatGil(avgPrice)}</td>
+                            <td>${formatGil(item.priceInfo.totalCost)}</td>
+                        </tr>
+                    `;
+                }
+
+                html += `
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+            }
+
+            // Items not found
+            const notFound = itemResults.filter(i => !i.bestServer);
+            if (notFound.length > 0) {
+                html += `
+                    <div class="server-section" style="border-left-color: var(--accent);">
+                        <div class="server-header">
+                            <span class="server-name" style="color: var(--accent);">Not Available</span>
+                        </div>
+                        <table class="price-table">
+                            <thead>
+                                <tr>
+                                    <th>Item</th>
+                                    <th>Needed</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${notFound.map(item => `
+                                    <tr>
+                                        <td>
+                                            <img src="${XIVAPI_BASE}${item.icon}" alt="" style="width:20px;height:20px;vertical-align:middle;margin-right:5px;" onerror="this.style.display='none'">
+                                            ${item.name}
+                                        </td>
+                                        <td>${item.totalQuantity}</td>
+                                        <td style="color: var(--accent);">${item.error || 'No listings'}</td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+            }
+
+            // Grand total
+            html += `
+                <div class="grand-total">
+                    <div class="grand-total-label">GRAND TOTAL</div>
+                    <div class="grand-total-value">${formatGil(grandTotal)}</div>
+                    ${totalExtraItems > 0 ? `<div style="color: var(--warning); margin-top: 10px;">+${totalExtraItems} extra items from purchasing stacks</div>` : ''}
+                </div>
+            `;
+
+            priceResults.innerHTML = html;
+        }
+
+        // Format gil amount
+        function formatGil(amount) {
+            return amount.toLocaleString() + ' gil';
+        }
+
+        // Event Listeners
+        itemSearch.addEventListener('input', (e) => {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => searchItems(e.target.value), 300);
+        });
+
+        itemSearch.addEventListener('focus', () => {
+            if (itemSearch.value.length >= 2) {
+                searchItems(itemSearch.value);
+            }
+        });
+
+        autocompleteDropdown.addEventListener('click', (e) => {
+            const item = e.target.closest('.autocomplete-item');
+            if (item && item.dataset.id) {
+                addItem(
+                    parseInt(item.dataset.id),
+                    item.dataset.name,
+                    item.dataset.icon
+                );
+            }
+        });
+
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('.input-container')) {
+                autocompleteDropdown.style.display = 'none';
+            }
+        });
+
+        findReagentsBtn.addEventListener('click', findAllReagents);
+
+        clearItemsBtn.addEventListener('click', () => {
+            selectedItems = [];
+            renderSelectedItems();
+            findReagentsBtn.disabled = true;
+            reagentSection.style.display = 'none';
+            priceSection.style.display = 'none';
+        });
+
+        findPricesBtn.addEventListener('click', findBestPrices);
+
+        // Keyboard navigation
+        itemSearch.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                autocompleteDropdown.style.display = 'none';
+            }
+        });
+    </script>
+</body>
+</html>
