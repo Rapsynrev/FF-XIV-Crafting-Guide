@@ -485,6 +485,26 @@
             <p class="subtitle">Find the cheapest prices across Aether Data Center servers</p>
         </header>
 
+        <!-- CORS Warning Banner -->
+        <div id="corsWarning" class="section" style="display: none; border-left: 4px solid var(--warning); background: rgba(255, 193, 7, 0.1);">
+            <h3 style="color: var(--warning); margin-bottom: 10px;">⚠️ Local File Mode Detected</h3>
+            <p style="margin-bottom: 10px;">You're opening this file directly in your browser (<code>file://</code>), which blocks API requests due to security restrictions (CORS).</p>
+            <p style="margin-bottom: 10px;"><strong>To fix this, run a local web server:</strong></p>
+            <pre style="background: var(--bg-primary); padding: 10px; border-radius: 5px; overflow-x: auto;">
+# Option 1: Python 3 (most common)
+python -m http.server 8080
+
+# Option 2: Python 2
+python -m SimpleHTTPServer 8080
+
+# Option 3: Node.js (if installed)
+npx serve
+
+# Then open: http://localhost:8080
+            </pre>
+            <p style="margin-top: 10px; color: var(--text-secondary);">Run one of these commands in the folder containing this HTML file.</p>
+        </div>
+
         <!-- Step 1: Item Input -->
         <div class="section">
             <h2 class="section-title">
@@ -579,22 +599,43 @@
                 return;
             }
 
+            // Show loading state
+            autocompleteDropdown.innerHTML = '<div class="autocomplete-item">Searching...</div>';
+            autocompleteDropdown.style.display = 'block';
+
             try {
                 // Using XIVAPI search endpoint
                 const response = await fetch(
                     `${XIVAPI_BASE}/search?string=${encodeURIComponent(query)}&indexes=Item&limit=15&filters=IsUntradable=0`
                 );
+
+                if (!response.ok) {
+                    throw new Error(`API returned ${response.status}: ${response.statusText}`);
+                }
+
                 const data = await response.json();
 
                 if (data.Results && data.Results.length > 0) {
                     displayAutocomplete(data.Results);
                 } else {
-                    autocompleteDropdown.innerHTML = '<div class="autocomplete-item">No items found</div>';
+                    autocompleteDropdown.innerHTML = '<div class="autocomplete-item">No items found for "' + query + '"</div>';
                     autocompleteDropdown.style.display = 'block';
                 }
             } catch (error) {
                 console.error('Search error:', error);
-                autocompleteDropdown.innerHTML = '<div class="autocomplete-item">Error searching items</div>';
+                let errorMsg = 'Error searching items';
+
+                if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
+                    if (window.location.protocol === 'file:') {
+                        errorMsg = 'CORS blocked - please run a local server (see instructions above)';
+                    } else {
+                        errorMsg = 'Network error - check your connection';
+                    }
+                } else {
+                    errorMsg = `Error: ${error.message}`;
+                }
+
+                autocompleteDropdown.innerHTML = `<div class="autocomplete-item" style="color: var(--accent);">${errorMsg}</div>`;
                 autocompleteDropdown.style.display = 'block';
             }
         }
@@ -1171,6 +1212,16 @@
                 autocompleteDropdown.style.display = 'none';
             }
         });
+
+        // Check for file:// protocol and show warning
+        function checkProtocol() {
+            if (window.location.protocol === 'file:') {
+                document.getElementById('corsWarning').style.display = 'block';
+            }
+        }
+
+        // Run on page load
+        checkProtocol();
     </script>
 </body>
 </html>
