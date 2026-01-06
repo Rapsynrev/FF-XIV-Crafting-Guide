@@ -587,12 +587,11 @@ npx serve
         const priceLoading = document.getElementById('priceLoading');
         const priceResults = document.getElementById('priceResults');
 
-        // XIVAPI base URL
-        const XIVAPI_BASE = 'https://xivapi.com';
-        const XIVAPI_V2_BASE = 'https://v2.xivapi.com/api';
+        // API base URLs
+        const GARLAND_BASE = 'https://garlandtools.org';
         const UNIVERSALIS_BASE = 'https://universalis.app/api/v2';
 
-        // Search for items
+        // Search for items using Garland Tools
         async function searchItems(query) {
             if (query.length < 2) {
                 autocompleteDropdown.style.display = 'none';
@@ -604,9 +603,9 @@ npx serve
             autocompleteDropdown.style.display = 'block';
 
             try {
-                // Using XIVAPI search endpoint
+                // Using Garland Tools search endpoint
                 const response = await fetch(
-                    `${XIVAPI_BASE}/search?string=${encodeURIComponent(query)}&indexes=Item&limit=15&filters=IsUntradable=0`
+                    `${GARLAND_BASE}/api/search.php?text=${encodeURIComponent(query)}&lang=en`
                 );
 
                 if (!response.ok) {
@@ -615,8 +614,11 @@ npx serve
 
                 const data = await response.json();
 
-                if (data.Results && data.Results.length > 0) {
-                    displayAutocomplete(data.Results);
+                // Filter to only items (type 'item') and exclude untradeable
+                const items = data.filter(r => r.type === 'item').slice(0, 15);
+
+                if (items.length > 0) {
+                    displayAutocomplete(items);
                 } else {
                     autocompleteDropdown.innerHTML = '<div class="autocomplete-item">No items found for "' + query + '"</div>';
                     autocompleteDropdown.style.display = 'block';
@@ -640,13 +642,13 @@ npx serve
             }
         }
 
-        // Display autocomplete results
+        // Display autocomplete results (Garland Tools format)
         function displayAutocomplete(results) {
             autocompleteDropdown.innerHTML = results.map(item => `
-                <div class="autocomplete-item" data-id="${item.ID}" data-name="${item.Name}" data-icon="${item.Icon}">
-                    <img src="${XIVAPI_BASE}${item.Icon}" alt="" onerror="this.style.display='none'">
-                    <span class="item-name">${item.Name}</span>
-                    <span class="item-category">${item.UrlType || 'Item'}</span>
+                <div class="autocomplete-item" data-id="${item.id}" data-name="${item.obj.n}" data-icon="${item.obj.c}">
+                    <img src="${GARLAND_BASE}/files/icons/item/${item.obj.c}.png" alt="" onerror="this.style.display='none'">
+                    <span class="item-name">${item.obj.n}</span>
+                    <span class="item-category">Item</span>
                 </div>
             `).join('');
             autocompleteDropdown.style.display = 'block';
@@ -695,7 +697,7 @@ npx serve
 
             selectedItemsContainer.innerHTML = selectedItems.map(item => `
                 <div class="item-tag">
-                    <img src="${XIVAPI_BASE}${item.icon}" alt="" onerror="this.style.display='none'">
+                    <img src="${GARLAND_BASE}/files/icons/item/${item.icon}.png" alt="" onerror="this.style.display='none'">
                     <span>${item.name}</span>
                     <input type="number" class="quantity-input" value="${item.quantity}" min="1"
                            onchange="updateQuantity(${item.id}, this.value)">
@@ -704,44 +706,48 @@ npx serve
             `).join('');
         }
 
-        // Get recipe for an item
-        async function getRecipe(itemId) {
+        // Get item data from Garland Tools (includes recipe if craftable)
+        async function getItemData(itemId) {
             try {
-                // Search for recipes that create this item
                 const response = await fetch(
-                    `${XIVAPI_BASE}/search?indexes=Recipe&filters=ItemResult.ID=${itemId}`
+                    `${GARLAND_BASE}/db/doc/item/en/3/${itemId}.json`
                 );
-                const data = await response.json();
 
-                if (data.Results && data.Results.length > 0) {
-                    // Get the full recipe details
-                    const recipeResponse = await fetch(
-                        `${XIVAPI_BASE}/recipe/${data.Results[0].ID}`
-                    );
-                    return await recipeResponse.json();
+                if (!response.ok) {
+                    throw new Error(`API returned ${response.status}`);
                 }
-                return null;
+
+                return await response.json();
             } catch (error) {
-                console.error('Recipe fetch error:', error);
+                console.error('Item fetch error:', error);
                 return null;
             }
         }
 
-        // Extract ingredients from recipe
-        function extractIngredients(recipe, multiplier = 1) {
+        // Extract ingredients from Garland Tools item data
+        function extractIngredients(itemData, multiplier = 1) {
             const ingredients = [];
+            const item = itemData.item;
 
-            for (let i = 0; i <= 9; i++) {
-                const ingredient = recipe[`ItemIngredient${i}`];
-                const amount = recipe[`AmountIngredient${i}`];
+            // Check if item has a craft recipe
+            if (!item.craft || item.craft.length === 0) {
+                return ingredients;
+            }
 
-                if (ingredient && ingredient.ID && amount > 0) {
+            // Get first recipe (usually the main one)
+            const recipe = item.craft[0];
+
+            if (recipe.ingredients) {
+                for (const ing of recipe.ingredients) {
+                    // Look up ingredient details from the partials
+                    const partial = itemData.partials?.find(p => p.id === ing.id && p.type === 'item');
+
                     ingredients.push({
-                        id: ingredient.ID,
-                        name: ingredient.Name,
-                        icon: ingredient.Icon,
-                        quantity: amount * multiplier,
-                        canHQ: ingredient.CanBeHq === 1
+                        id: ing.id,
+                        name: partial?.obj?.n || `Item ${ing.id}`,
+                        icon: partial?.obj?.c || ing.id,
+                        quantity: ing.amount * multiplier,
+                        canHQ: partial?.obj?.hq === 1 || true // Default to true
                     });
                 }
             }
@@ -762,10 +768,10 @@ npx serve
             for (const item of selectedItems) {
                 reagentStatus.textContent = `Fetching recipe for ${item.name}...`;
 
-                const recipe = await getRecipe(item.id);
+                const itemData = await getItemData(item.id);
 
-                if (recipe) {
-                    const ingredients = extractIngredients(recipe, item.quantity);
+                if (itemData && itemData.item && itemData.item.craft) {
+                    const ingredients = extractIngredients(itemData, item.quantity);
 
                     for (const ingredient of ingredients) {
                         if (allReagents.has(ingredient.id)) {
@@ -818,7 +824,7 @@ npx serve
                         ${requiredReagents.map(r => `
                             <tr>
                                 <td>
-                                    <img src="${XIVAPI_BASE}${r.icon}" alt="" onerror="this.style.display='none'">
+                                    <img src="${GARLAND_BASE}/files/icons/item/${r.icon}.png" alt="" onerror="this.style.display='none'">
                                     ${r.name}
                                 </td>
                                 <td>${r.totalQuantity}</td>
@@ -1095,7 +1101,7 @@ npx serve
                     html += `
                         <tr>
                             <td>
-                                <img src="${XIVAPI_BASE}${item.icon}" alt="" style="width:20px;height:20px;vertical-align:middle;margin-right:5px;" onerror="this.style.display='none'">
+                                <img src="${GARLAND_BASE}/files/icons/item/${item.icon}.png" alt="" style="width:20px;height:20px;vertical-align:middle;margin-right:5px;" onerror="this.style.display='none'">
                                 ${item.name}
                                 ${item.priceInfo.isHQ ? '<span class="hq-icon">HQ</span>' : ''}
                             </td>
@@ -1135,7 +1141,7 @@ npx serve
                                 ${notFound.map(item => `
                                     <tr>
                                         <td>
-                                            <img src="${XIVAPI_BASE}${item.icon}" alt="" style="width:20px;height:20px;vertical-align:middle;margin-right:5px;" onerror="this.style.display='none'">
+                                            <img src="${GARLAND_BASE}/files/icons/item/${item.icon}.png" alt="" style="width:20px;height:20px;vertical-align:middle;margin-right:5px;" onerror="this.style.display='none'">
                                             ${item.name}
                                         </td>
                                         <td>${item.totalQuantity}</td>
