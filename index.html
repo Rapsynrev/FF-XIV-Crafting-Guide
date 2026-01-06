@@ -529,6 +529,10 @@ npx serve
                 <button class="btn btn-secondary" id="clearItems">
                     Clear All
                 </button>
+                <label style="display: flex; align-items: center; gap: 8px; margin-left: 15px; cursor: pointer;">
+                    <input type="checkbox" id="excludeCrystals" checked style="width: 18px; height: 18px; cursor: pointer;">
+                    <span>Exclude Crystals/Shards/Clusters</span>
+                </label>
             </div>
         </div>
 
@@ -590,6 +594,33 @@ npx serve
         // API base URLs
         const GARLAND_BASE = 'https://garlandtools.org';
         const UNIVERSALIS_BASE = 'https://universalis.app/api/v2';
+
+        // Crystal/Shard/Cluster data (IDs 2-19) - not included in Garland partials
+        const CRYSTAL_DATA = {
+            2:  { name: 'Fire Shard', icon: 2 },
+            3:  { name: 'Ice Shard', icon: 3 },
+            4:  { name: 'Wind Shard', icon: 4 },
+            5:  { name: 'Earth Shard', icon: 5 },
+            6:  { name: 'Lightning Shard', icon: 6 },
+            7:  { name: 'Water Shard', icon: 7 },
+            8:  { name: 'Fire Crystal', icon: 8 },
+            9:  { name: 'Ice Crystal', icon: 9 },
+            10: { name: 'Wind Crystal', icon: 10 },
+            11: { name: 'Earth Crystal', icon: 11 },
+            12: { name: 'Lightning Crystal', icon: 12 },
+            13: { name: 'Water Crystal', icon: 13 },
+            14: { name: 'Fire Cluster', icon: 14 },
+            15: { name: 'Ice Cluster', icon: 15 },
+            16: { name: 'Wind Cluster', icon: 16 },
+            17: { name: 'Earth Cluster', icon: 17 },
+            18: { name: 'Lightning Cluster', icon: 18 },
+            19: { name: 'Water Cluster', icon: 19 }
+        };
+
+        // Check if an item ID is a crystal/shard/cluster
+        function isCrystal(itemId) {
+            return itemId >= 2 && itemId <= 19;
+        }
 
         // Search for items using Garland Tools
         async function searchItems(query) {
@@ -739,24 +770,34 @@ npx serve
 
             if (recipe.ingredients) {
                 for (const ing of recipe.ingredients) {
-                    // Look up ingredient details from the partials
-                    // Convert IDs to same type for comparison (can be string or number)
-                    const ingId = String(ing.id);
-                    const partial = itemData.partials?.find(p =>
-                        String(p.id) === ingId && p.type === 'item'
-                    );
+                    const ingId = ing.id;
 
-                    // Debug: log if partial not found
-                    if (!partial) {
-                        console.log('Partial not found for ingredient:', ing.id, 'Available partials:', itemData.partials);
+                    // Check if it's a crystal/shard/cluster first
+                    if (CRYSTAL_DATA[ingId]) {
+                        ingredients.push({
+                            id: ingId,
+                            name: CRYSTAL_DATA[ingId].name,
+                            icon: CRYSTAL_DATA[ingId].icon,
+                            quantity: ing.amount * multiplier,
+                            canHQ: false,
+                            isCrystal: true
+                        });
+                        continue;
                     }
 
+                    // Look up ingredient details from the partials
+                    // Convert IDs to same type for comparison (can be string or number)
+                    const partial = itemData.partials?.find(p =>
+                        String(p.id) === String(ingId) && p.type === 'item'
+                    );
+
                     ingredients.push({
-                        id: ing.id,
-                        name: partial?.obj?.n || `Item ${ing.id}`,
-                        icon: partial?.obj?.c || ing.id,
+                        id: ingId,
+                        name: partial?.obj?.n || `Item ${ingId}`,
+                        icon: partial?.obj?.c || ingId,
                         quantity: ing.amount * multiplier,
-                        canHQ: partial?.obj?.hq === 1 || true // Default to true
+                        canHQ: partial?.obj?.hq === 1 || true,
+                        isCrystal: false
                     });
                 }
             }
@@ -808,7 +849,10 @@ npx serve
                 }
             }
 
-            requiredReagents = Array.from(allReagents.values());
+            // Filter out crystals if checkbox is checked
+            const excludeCrystals = document.getElementById('excludeCrystals').checked;
+            requiredReagents = Array.from(allReagents.values())
+                .filter(r => !excludeCrystals || !r.isCrystal);
 
             if (requiredReagents.length === 0) {
                 reagentStatus.textContent = 'No reagents found. Items may not be craftable.';
@@ -817,7 +861,9 @@ npx serve
                 return;
             }
 
-            reagentStatus.textContent = `Found ${requiredReagents.length} required reagents`;
+            const crystalCount = Array.from(allReagents.values()).filter(r => r.isCrystal).length;
+            const crystalNote = excludeCrystals && crystalCount > 0 ? ` (${crystalCount} crystal types excluded)` : '';
+            reagentStatus.textContent = `Found ${requiredReagents.length} required reagents${crystalNote}`;
             reagentStatus.className = 'status status-success';
 
             reagentList.innerHTML = `
@@ -1021,6 +1067,10 @@ npx serve
                     }
 
                     if (bestServer && bestPriceInfo) {
+                        // Ensure server exists in shopping list (might be a new server)
+                        if (!serverShoppingLists[bestServer]) {
+                            serverShoppingLists[bestServer] = { items: [], total: 0 };
+                        }
                         serverShoppingLists[bestServer].items.push({
                             ...reagent,
                             priceInfo: bestPriceInfo
