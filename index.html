@@ -740,7 +740,16 @@ npx serve
             if (recipe.ingredients) {
                 for (const ing of recipe.ingredients) {
                     // Look up ingredient details from the partials
-                    const partial = itemData.partials?.find(p => p.id === ing.id && p.type === 'item');
+                    // Convert IDs to same type for comparison (can be string or number)
+                    const ingId = String(ing.id);
+                    const partial = itemData.partials?.find(p =>
+                        String(p.id) === ingId && p.type === 'item'
+                    );
+
+                    // Debug: log if partial not found
+                    if (!partial) {
+                        console.log('Partial not found for ingredient:', ing.id, 'Available partials:', itemData.partials);
+                    }
 
                     ingredients.push({
                         id: ing.id,
