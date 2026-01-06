@@ -1108,7 +1108,7 @@ npx serve
 
             // Summary cards
             const serversUsed = Object.entries(serverShoppingLists)
-                .filter(([_, data]) => data.items.length > 0).length;
+                .filter(([_, data]) => data && data.items && data.items.length > 0).length;
             const totalItems = itemResults.length;
             const itemsFound = itemResults.filter(i => i.bestServer).length;
 
@@ -1125,10 +1125,10 @@ npx serve
                 </div>
             `;
 
-            // Sort servers by total cost (ascending) and filter out empty
+            // Sort servers by number of items (descending) and filter out empty
             const sortedServers = Object.entries(serverShoppingLists)
-                .filter(([_, data]) => data.items.length > 0)
-                .sort((a, b) => b.items.length - a.items.length);
+                .filter(([_, data]) => data && data.items && data.items.length > 0)
+                .sort(([, dataA], [, dataB]) => dataB.items.length - dataA.items.length);
 
             for (const [server, data] of sortedServers) {
                 grandTotal += data.total;
